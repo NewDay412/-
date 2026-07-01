@@ -22,7 +22,8 @@ class DataAnalyzer:
         if self.use_csv:
             from storage.csv_storage import CSVStorage
             storage = CSVStorage()
-            self.df = storage.load_data()
+            data = storage.load_data()
+            self.df = pd.DataFrame(data)
         else:
             from storage.mongodb import MongoDBStorage
             storage = MongoDBStorage()
