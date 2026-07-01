@@ -5,8 +5,10 @@ from loguru import logger
 import pandas as pd
 import os
 from datetime import datetime
+from typing import List, Dict, Optional
+from .base_storage import BaseStorage
 
-class MongoDBStorage:
+class MongoDBStorage(BaseStorage):
     """MongoDB数据存储模块"""
     
     def __init__(self):
@@ -27,7 +29,7 @@ class MongoDBStorage:
             logger.error(f"MongoDB连接失败: {e}")
             raise
     
-    def insert_one(self, data):
+    def insert_one(self, data: Dict) -> None:
         """插入单条数据"""
         if not isinstance(data, dict):
             logger.error("数据类型必须为dict")
@@ -44,7 +46,7 @@ class MongoDBStorage:
             logger.error(f"插入数据失败: {e}")
             raise
     
-    def insert_many(self, data_list):
+    def insert_many(self, data_list: List[Dict]) -> None:
         """批量插入数据"""
         if not isinstance(data_list, list):
             logger.error("数据类型必须为list")
@@ -83,7 +85,17 @@ class MongoDBStorage:
             logger.error(f"查询数据失败: {e}")
             raise
     
-    def find(self, query=None, projection=None, limit=None, skip=None):
+    def load_data(self) -> List[Dict]:
+        """加载数据"""
+        return self.find({}, {'_id': 0})
+    
+    def save_data(self, data: List[Dict]) -> None:
+        """保存数据"""
+        if data:
+            self.insert_many(data)
+    
+    def find(self, query: Optional[Dict] = None, projection: Optional[Dict] = None, 
+             limit: Optional[int] = None, skip: Optional[int] = None) -> List[Dict]:
         """查询多条数据"""
         try:
             cursor = self.collection.find(query, projection)
@@ -96,7 +108,7 @@ class MongoDBStorage:
             logger.error(f"查询数据失败: {e}")
             raise
     
-    def count_documents(self, query=None):
+    def count_documents(self, query: Optional[Dict] = None) -> int:
         """统计文档数量"""
         try:
             return self.collection.count_documents(query or {})

@@ -35,8 +35,7 @@ class BaseSpider:
             response = self.session.get(
                 url,
                 params=params,
-                timeout=Config.SPIDER_SETTINGS["TIMEOUT"],
-                verify=False
+                timeout=Config.SPIDER_SETTINGS["TIMEOUT"]
             )
             
             response.raise_for_status()
@@ -68,8 +67,7 @@ class BaseSpider:
                 url,
                 data=data,
                 json=json,
-                timeout=Config.SPIDER_SETTINGS["TIMEOUT"],
-                verify=False
+                timeout=Config.SPIDER_SETTINGS["TIMEOUT"]
             )
             
             response.raise_for_status()

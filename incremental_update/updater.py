@@ -18,8 +18,9 @@ class IncrementalUpdater:
         try:
             result = self.storage.collection.find_one(
                 {}, 
-                {'update_time': 1, '_id': 0}
-            ).sort('update_time', -1).limit(1)
+                {'update_time': 1, '_id': 0},
+                sort=[('update_time', -1)]
+            )
             
             if result:
                 self.last_update_time = result['update_time']
