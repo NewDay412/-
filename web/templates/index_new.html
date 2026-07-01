@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重庆市二手房数据可视化平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .overview-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+        }
+        
+        .card-icon {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+        
+        .card-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .card-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .card-unit {
+            font-size: 14px;
+            color: #999;
+            margin-left: 5px;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            min-height: 400px;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .chart {
+            width: 100%;
+            height: 350px;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏠 重庆市二手房数据可视化平台</h1>
+            <p>基于真实爬取数据的房价分析与可视化展示</p>
+        </div>
+        
+        <div class="overview-cards" id="overviewCards">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>加载数据中...</p>
+            </div>
+        </div>
+        
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-title">📊 各区县房源数量分布</div>
+                <div class="chart" id="districtBarChart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">💰 各区县平均单价对比</div>
+                <div class="chart" id="unitPriceChart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">📈 总价区间分布</div>
+                <div class="chart" id="pricePieChart"></div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">📏 面积区间分布</div>
+                <div class="chart" id="areaPieChart"></div>
+            </div>
+            
+            <div class="chart-container full-width">
+                <div class="chart-title">📍 区县房价综合对比</div>
+                <div class="chart" id="radarChart"></div>
+            </div>
+            
+            <div class="chart-container full-width">
+                <div class="chart-title">🏆 高价房源TOP10</div>
+                <div class="chart" id="topHousesChart"></div>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <div class="chart-title">📋 各区县详细统计</div>
+            <table id="districtTable">
+                <thead>
+                    <tr>
+                        <th>区县</th>
+                        <th>房源数量</th>
+                        <th>平均总价(万)</th>
+                        <th>平均单价(元/㎡)</th>
+                        <th>平均面积(㎡)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" style="text-align: center;">加载中...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        let overviewChart, districtBarChart, unitPriceChart, pricePieChart, areaPieChart, radarChart, topHousesChart;
+        
+        function initCharts() {
+            districtBarChart = echarts.init(document.getElementById('districtBarChart'));
+            unitPriceChart = echarts.init(document.getElementById('unitPriceChart'));
+            pricePieChart = echarts.init(document.getElementById('pricePieChart'));
+            areaPieChart = echarts.init(document.getElementById('areaPieChart'));
+            radarChart = echarts.init(document.getElementById('radarChart'));
+            topHousesChart = echarts.init(document.getElementById('topHousesChart'));
+            
+            window.addEventListener('resize', () => {
+                districtBarChart.resize();
+                unitPriceChart.resize();
+                pricePieChart.resize();
+                areaPieChart.resize();
+                radarChart.resize();
+                topHousesChart.resize();
+            });
+        }
+        
+        async function fetchData(url) {
+            try {
+                const response = await fetch(url);
+                return await response.json();
+            } catch (error) {
+                console.error('数据获取失败:', error);
+                return [];
+            }
+        }
+        
+        async function loadOverview() {
+            const data = await fetchData('/api/overview');
+            
+            if (!data || data.total_count === undefined) {
+                document.getElementById('overviewCards').innerHTML = '<div class="card"><div class="card-value">暂无数据</div></div>';
+                return;
+            }
+            
+            const cards = [
+                { icon: '📊', title: '房源总数', value: data.total_count.toLocaleString(), unit: '条' },
+                { icon: '💰', title: '平均总价', value: data.avg_total_price, unit: '万' },
+                { icon: '🏷️', title: '平均单价', value: Math.round(data.avg_unit_price).toLocaleString(), unit: '元/㎡' },
+                { icon: '📏', title: '平均面积', value: data.avg_area, unit: '㎡' },
+                { icon: '📈', title: '最高总价', value: data.max_price, unit: '万' },
+                { icon: '📉', title: '区县数量', value: data.district_count, unit: '个' }
+            ];
+            
+            document.getElementById('overviewCards').innerHTML = cards.map(card => `
+                <div class="card">
+                    <div class="card-icon">${card.icon}</div>
+                    <div class="card-title">${card.title}</div>
+                    <div class="card-value">${card.value}<span class="card-unit">${card.unit}</span></div>
+                </div>
+            `).join('');
+        }
+        
+        async function loadDistrictStats() {
+            const data = await fetchData('/api/district_stats');
+            
+            if (!data || data.length === 0) {
+                districtBarChart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center' } });
+                unitPriceChart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center' } });
+                return;
+            }
+            
+            const districts = data.map(d => d.district);
+            const counts = data.map(d => d.count);
+            const unitPrices = data.map(d => d.avg_unit_price);
+            const totalPrices = data.map(d => d.avg_total_price);
+            
+            districtBarChart.setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'category', data: districts, axisLabel: { rotate: 45, fontSize: 11 } },
+                yAxis: { type: 'value', name: '房源数量' },
+                series: [{
+                    type: 'bar',
+                    data: counts,
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#667eea' },
+                            { offset: 1, color: '#764ba2' }
+                        ]),
+                        borderRadius: [4, 4, 0, 0]
+                    },
+                    emphasis: { itemStyle: { color: '#764ba2' } }
+                }]
+            });
+            
+            unitPriceChart.setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'category', data: districts, axisLabel: { rotate: 45, fontSize: 11 } },
+                yAxis: { type: 'value', name: '单价(元/㎡)' },
+                series: [{
+                    type: 'bar',
+                    data: unitPrices,
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#f093fb' },
+                            { offset: 1, color: '#f5576c' }
+                        ]),
+                        borderRadius: [4, 4, 0, 0]
+                    },
+                    emphasis: { itemStyle: { color: '#f5576c' } }
+                }]
+            });
+            
+            const tableBody = document.getElementById('districtTable').querySelector('tbody');
+            tableBody.innerHTML = data.map(d => `
+                <tr>
+                    <td>${d.district}</td>
+                    <td>${d.count.toLocaleString()}</td>
+                    <td>${d.avg_total_price}</td>
+                    <td>${Math.round(d.avg_unit_price).toLocaleString()}</td>
+                    <td>${d.avg_area}</td>
+                </tr>
+            `).join('');
+            
+            const radarData = data.map(d => ({
+                name: d.district,
+                value: [
+                    d.count / Math.max(...counts) * 100,
+                    d.avg_unit_price / Math.max(...unitPrices) * 100,
+                    d.avg_total_price / Math.max(...totalPrices) * 100,
+                    d.avg_area / Math.max(...data.map(x => x.avg_area)) * 100
+                ]
+            }));
+            
+            radarChart.setOption({
+                tooltip: {},
+                legend: { data: districts.slice(0, 8) },
+                radar: {
+                    indicator: [
+                        { name: '房源数量', max: 100 },
+                        { name: '平均单价', max: 100 },
+                        { name: '平均总价', max: 100 },
+                        { name: '平均面积', max: 100 }
+                    ]
+                },
+                series: [{
+                    type: 'radar',
+                    data: radarData.slice(0, 8)
+                }]
+            });
+        }
+        
+        async function loadPriceDistribution() {
+            const data = await fetchData('/api/price_distribution');
+            
+            if (!data || !data.labels) {
+                pricePieChart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center' } });
+                return;
+            }
+            
+            pricePieChart.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c}条 ({d}%)' },
+                legend: { orient: 'vertical', right: '5%', top: 'center' },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['40%', '50%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                    label: { show: false },
+                    emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
+                    data: data.labels.map((label, i) => ({
+                        value: data.values[i],
+                        name: label,
+                        itemStyle: { color: echarts.color.lift(echarts.color.modifyAlpha('#667eea', 0.8), i * 0.1) }
+                    }))
+                }]
+            });
+        }
+        
+        async function loadAreaDistribution() {
+            const data = await fetchData('/api/area_distribution');
+            
+            if (!data || !data.labels) {
+                areaPieChart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center' } });
+                return;
+            }
+            
+            areaPieChart.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c}条 ({d}%)' },
+                legend: { orient: 'vertical', right: '5%', top: 'center' },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['40%', '50%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                    label: { show: false },
+                    emphasis: { label: { show: true, fontSize: 16, fontWeight: 'bold' } },
+                    data: data.labels.map((label, i) => ({
+                        value: data.values[i],
+                        name: label,
+                        itemStyle: { color: echarts.color.lift(echarts.color.modifyAlpha('#f5576c', 0.8), i * 0.1) }
+                    }))
+                }]
+            });
+        }
+        
+        async function loadTopHouses() {
+            const data = await fetchData('/api/top_houses');
+            
+            if (!data || data.length === 0) {
+                topHousesChart.setOption({ title: { text: '暂无数据', left: 'center', top: 'center' } });
+                return;
+            }
+            
+            const titles = data.map(d => d.title.length > 15 ? d.title.substring(0, 15) + '...' : d.title);
+            const prices = data.map(d => d.total_price);
+            
+            topHousesChart.setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                grid: { left: '15%', right: '5%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'value', name: '总价(万)' },
+                yAxis: { type: 'category', data: titles.reverse(), axisLabel: { fontSize: 11 } },
+                series: [{
+                    type: 'bar',
+                    data: prices.reverse(),
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+                            { offset: 0, color: '#4facfe' },
+                            { offset: 1, color: '#00f2fe' }
+                        ]),
+                        borderRadius: [0, 4, 4, 0]
+                    },
+                    emphasis: { itemStyle: { color: '#4facfe' } }
+                }]
+            });
+        }
+        
+        async function loadAllData() {
+            initCharts();
+            await loadOverview();
+            await loadDistrictStats();
+            await loadPriceDistribution();
+            await loadAreaDistribution();
+            await loadTopHouses();
+        }
+        
+        document.addEventListener('DOMContentLoaded', loadAllData);
+    </script>
+</body>
+</html>
